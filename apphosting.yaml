@@ -58,7 +58,7 @@ env:
       - RUNTIME
 
   - variable: SITE_URL
-    value: "https://aura-e7a0e.web.app"
+    value: "https://aura--aura-e7a0e.us-east4.hosted.app"
     availability:
       - BUILD
       - RUNTIME
