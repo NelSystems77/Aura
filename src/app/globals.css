@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0d10;
+  --foreground: #f2efe9;
+
+  /* Marca (compartido) */
+  --brand-gold: #c9a24b;
+  --brand-gold-light: #e4c988;
+  --brand-ink: #0b0d10;
+  --brand-paper: #faf6f0;
+
+  /* Zona Caballero: gravedad, poder, misterio */
+  --h-bg: #0b0d10;
+  --h-surface: #15181d;
+  --h-surface-2: #1b2027;
+  --h-border: rgba(255, 255, 255, 0.09);
+  --h-text: #f2efe9;
+  --h-muted: #9aa1ab;
+  --h-accent: #c9a24b;
+  --h-accent-soft: rgba(201, 162, 75, 0.14);
+  --h-accent-2: #3d5a73;
+
+  /* Zona Dama: sensualidad, calidez, elegancia */
+  --m-bg: #fbf1ee;
+  --m-surface: #fffbf9;
+  --m-surface-2: #f6e3e0;
+  --m-border: rgba(110, 20, 35, 0.12);
+  --m-text: #3a1420;
+  --m-muted: #8d6d6c;
+  --m-accent: #93283a;
+  --m-accent-soft: rgba(147, 40, 58, 0.1);
+  --m-accent-2: #caa46a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-light: var(--brand-gold-light);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-paper: var(--brand-paper);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-cinzel: var(--font-cinzel);
+  --font-garamond: var(--font-garamond);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+::selection {
+  background: var(--brand-gold);
+  color: #14110a;
+}
+
+/* ---- Zonas con identidad de género ---- */
+.zone-hombre {
+  --zone-bg: var(--h-bg);
+  --zone-surface: var(--h-surface);
+  --zone-surface-2: var(--h-surface-2);
+  --zone-border: var(--h-border);
+  --zone-text: var(--h-text);
+  --zone-muted: var(--h-muted);
+  --zone-accent: var(--h-accent);
+  --zone-accent-soft: var(--h-accent-soft);
+  --zone-accent-2: var(--h-accent-2);
+  background: var(--zone-bg);
+  color: var(--zone-text);
+}
+
+.zone-mujer {
+  --zone-bg: var(--m-bg);
+  --zone-surface: var(--m-surface);
+  --zone-surface-2: var(--m-surface-2);
+  --zone-border: var(--m-border);
+  --zone-text: var(--m-text);
+  --zone-muted: var(--m-muted);
+  --zone-accent: var(--m-accent);
+  --zone-accent-soft: var(--m-accent-soft);
+  --zone-accent-2: var(--m-accent-2);
+  background: var(--zone-bg);
+  color: var(--zone-text);
+}
+
+.zone-surface {
+  background: var(--zone-surface);
+  border-color: var(--zone-border);
+}
+
+.zone-surface-2 {
+  background: var(--zone-surface-2);
+  border-color: var(--zone-border);
+}
+
+.zone-accent-text {
+  color: var(--zone-accent);
+}
+
+.zone-muted-text {
+  color: var(--zone-muted);
+}
+
+.zone-border {
+  border-color: var(--zone-border);
+}
+
+/* ---- Textura sutil de lujo (grano + viñeta) ---- */
+.luxury-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.luxury-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- Scrollbar refinado ---- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brand-gold);
+  border-radius: 999px;
+  opacity: 0.6;
+}
+
+/* ---- Animaciones de utilidad ---- */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 2.2s infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
