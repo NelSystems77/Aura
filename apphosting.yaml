@@ -10,7 +10,7 @@ runConfig:
 env:
   # Config pública de Firebase (segura de exponer en el cliente).
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: ""
+    value: "AIzaSyB-NDl9W_AJ6mGhwOYSVw4rl__BUkFScQM"
     availability:
       - BUILD
       - RUNTIME
@@ -25,7 +25,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: ""
+    value: "aura-e7a0e.firebasestorage.app"
     availability:
       - BUILD
       - RUNTIME
@@ -35,7 +35,12 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: ""
+    value: "1:727315067021:web:2918ee545313870b9972c4"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-91LG1123YW"
     availability:
       - BUILD
       - RUNTIME

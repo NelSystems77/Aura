@@ -3,6 +3,7 @@ import { getSettings } from "@/lib/repo/settings";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WhatsAppFloatingButton } from "@/components/WhatsAppFloatingButton";
+import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 
 // Todas las rutas bajo este grupo son `force-dynamic`, así que sí pueden leer
 // Firestore para reflejar los ajustes editados desde /admin en el título,
@@ -56,6 +57,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <FirebaseAnalytics />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter settings={settings} />

@@ -108,10 +108,9 @@ Los cambios se reflejan de inmediato en el sitio público (sin necesidad de reco
    started", conectando este repositorio de GitHub y la rama de producción. A partir de ahí,
    cada push a esa rama despliega automáticamente (build + SSR administrado por Firebase).
 
-   Los valores de entorno productivos se configuran en `apphosting.yaml` (ya incluido en el
-   repo) — edítalo con los valores reales de `NEXT_PUBLIC_FIREBASE_API_KEY` y
-   `NEXT_PUBLIC_FIREBASE_APP_ID` (los únicos que faltan) antes del primer deploy. Para mover
-   `ADMIN_UIDS` a Secret Manager en vez de texto plano:
+   Los valores de entorno productivos ya están en `apphosting.yaml` (config pública de
+   Firebase + los dos UID admin + WhatsApp). Para mover `ADMIN_UIDS` a Secret Manager en vez
+   de texto plano:
 
    ```bash
    npx firebase apphosting:secrets:set ADMIN_UIDS
