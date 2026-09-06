@@ -13,8 +13,7 @@ function StatCard({ label, value, accent = "#c9a24b" }: { label: string; value: 
 }
 
 export default async function AdminDashboardPage() {
-  const stats = countProducts();
-  const slides = listSlides();
+  const [stats, slides] = await Promise.all([countProducts(), listSlides()]);
 
   return (
     <div>

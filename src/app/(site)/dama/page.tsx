@@ -8,7 +8,7 @@ import { Container } from "@/components/ui/Container";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = getSettings();
+  const settings = await getSettings();
   return {
     title: "Zona Dama — Perfumes para mujer",
     description: `${settings.heroSubtitleMujer}. Compra directa por WhatsApp.`,
@@ -16,9 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DamaPage() {
-  const settings = getSettings();
-  const products = listProducts({ gender: "mujer" });
-  const brands = listBrands("mujer");
+  const [settings, products, brands] = await Promise.all([
+    getSettings(),
+    listProducts({ gender: "mujer" }),
+    listBrands("mujer"),
+  ]);
 
   return (
     <div className="zone-mujer min-h-screen">

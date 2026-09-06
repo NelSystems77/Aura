@@ -37,9 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
-# database (runtime state, never commit)
-/var/data/*.db
-/var/data/*.db-*
+# firebase
+.firebase/
+.firebase-emulator-data/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
 
 # typescript
 *.tsbuildinfo

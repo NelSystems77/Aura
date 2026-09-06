@@ -1,7 +1,7 @@
 export type Gender = "hombre" | "mujer";
 
 export type Product = {
-  id: number;
+  id: string;
   slug: string;
   name: string;
   brand: string;
@@ -42,7 +42,7 @@ export type ProductInput = {
 export type GenderTheme = Gender | "general";
 
 export type CarouselSlide = {
-  id: number;
+  id: string;
   title: string;
   subtitle: string;
   imageUrl: string | null;

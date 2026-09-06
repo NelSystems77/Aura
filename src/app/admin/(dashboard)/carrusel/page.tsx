@@ -3,7 +3,7 @@ import { listSlides } from "@/lib/repo/carousel";
 import { deleteSlideAction } from "@/lib/actions/carousel-actions";
 
 export default async function AdminCarouselPage() {
-  const slides = listSlides();
+  const slides = await listSlides();
 
   return (
     <div>

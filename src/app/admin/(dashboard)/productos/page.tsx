@@ -26,11 +26,10 @@ export default async function AdminProductsPage({
   if (status === "agotados") filters.available = false;
   if (status === "destacados") filters.featured = true;
 
-  const all = listProducts(filters);
+  const [all, brands] = await Promise.all([listProducts(filters), listBrands()]);
   const total = all.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageItems = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const brands = listBrands();
 
   function buildQuery(overrides: Record<string, string | number>) {
     const params = new URLSearchParams();

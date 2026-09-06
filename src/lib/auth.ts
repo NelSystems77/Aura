@@ -1,52 +1,42 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { getDb } from "@/lib/db";
+import { getAdminAuth } from "@/lib/firebase-admin";
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
-  createSessionToken,
-  hashPassword,
-  verifySessionToken,
-  verifyPassword,
-} from "@/lib/auth-core";
+  isAdminUid,
+  verifySessionCookieToken,
+} from "@/lib/session";
 
-export { hashPassword, verifyPassword, verifySessionToken, SESSION_COOKIE_NAME };
+export { SESSION_COOKIE_NAME };
 
-type AdminUserRow = { id: number; email: string; password_hash: string };
+export async function createSessionCookieFromIdToken(
+  idToken: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const auth = getAdminAuth();
 
-export function findAdminByEmail(email: string): AdminUserRow | null {
-  const db = getDb();
-  const row = db
-    .prepare("SELECT id, email, password_hash FROM admin_users WHERE email = ?")
-    .get(email.toLowerCase()) as AdminUserRow | undefined;
-  return row ?? null;
-}
+  let decoded;
+  try {
+    decoded = await auth.verifyIdToken(idToken, true);
+  } catch {
+    return { ok: false, error: "No se pudo verificar tu sesión. Intenta de nuevo." };
+  }
 
-export function createAdminUser(email: string, password: string) {
-  const db = getDb();
-  db.prepare("INSERT OR REPLACE INTO admin_users (email, password_hash) VALUES (?, ?)").run(
-    email.toLowerCase(),
-    hashPassword(password)
-  );
-}
+  if (!isAdminUid(decoded.uid)) {
+    return { ok: false, error: "Esta cuenta no tiene permisos de administrador." };
+  }
 
-export function updateAdminPassword(email: string, newPassword: string) {
-  const db = getDb();
-  db.prepare("UPDATE admin_users SET password_hash = ? WHERE email = ?").run(
-    hashPassword(newPassword),
-    email.toLowerCase()
-  );
-}
-
-export async function setSessionCookie(email: string) {
+  const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: SESSION_TTL_MS });
   const store = await cookies();
-  store.set(SESSION_COOKIE_NAME, createSessionToken(email), {
+  store.set(SESSION_COOKIE_NAME, sessionCookie, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_TTL_MS / 1000,
   });
+
+  return { ok: true };
 }
 
 export async function clearSessionCookie() {
@@ -54,8 +44,11 @@ export async function clearSessionCookie() {
   store.delete(SESSION_COOKIE_NAME);
 }
 
-export async function getCurrentAdmin(): Promise<{ email: string } | null> {
+export async function getCurrentAdmin(): Promise<{ uid: string; email: string | null } | null> {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE_NAME)?.value;
-  return verifySessionToken(token);
+  return verifySessionCookieToken(store.get(SESSION_COOKIE_NAME)?.value);
+}
+
+export async function updateAdminPassword(uid: string, newPassword: string) {
+  await getAdminAuth().updateUser(uid, { password: newPassword });
 }

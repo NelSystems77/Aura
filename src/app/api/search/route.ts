@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const products = listProducts(gender ? { gender } : {});
+  const products = await listProducts(gender ? { gender } : {});
   const index = createProductSearchIndex(products);
   const results = smartSearch(products, index, q).slice(0, 24);
 

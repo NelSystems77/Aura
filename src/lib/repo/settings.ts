@@ -1,25 +1,24 @@
-import { getDb } from "@/lib/db";
+import "server-only";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { DEFAULT_SETTINGS, type SiteSettings } from "@/lib/types";
 
-export function getSettings(): SiteSettings {
-  const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM settings").all() as {
-    key: string;
-    value: string;
-  }[];
-  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return { ...DEFAULT_SETTINGS, ...map } as SiteSettings;
+const DOC_PATH = { collection: "settings", doc: "site" };
+
+export async function getSettings(): Promise<SiteSettings> {
+  const db = getAdminDb();
+  const snapshot = await db.collection(DOC_PATH.collection).doc(DOC_PATH.doc).get();
+  const data = snapshot.exists ? (snapshot.data() as Partial<SiteSettings>) : {};
+  return { ...DEFAULT_SETTINGS, ...data };
 }
 
-export function updateSettings(partial: Partial<SiteSettings>): SiteSettings {
-  const db = getDb();
-  const stmt = db.prepare(
-    `INSERT INTO settings (key, value) VALUES (?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+export async function updateSettings(partial: Partial<SiteSettings>): Promise<SiteSettings> {
+  const db = getAdminDb();
+  const clean = Object.fromEntries(
+    Object.entries(partial).filter(([, value]) => value !== undefined)
   );
-  for (const [key, value] of Object.entries(partial)) {
-    if (value === undefined) continue;
-    stmt.run(key, String(value));
-  }
+  await db
+    .collection(DOC_PATH.collection)
+    .doc(DOC_PATH.doc)
+    .set(clean, { merge: true });
   return getSettings();
 }

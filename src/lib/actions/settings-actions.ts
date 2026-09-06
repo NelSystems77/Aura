@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { updateSettings } from "@/lib/repo/settings";
-import { findAdminByEmail, updateAdminPassword, verifyPassword, getCurrentAdmin } from "@/lib/auth";
+import { getCurrentAdmin, updateAdminPassword } from "@/lib/auth";
 
 export type SettingsFormState = { error: string | null; success?: boolean };
 
@@ -33,7 +33,7 @@ export async function updateSettingsAction(
     return { error: "Ingresa un número de WhatsApp válido (con código de país, sin +)." };
   }
 
-  updateSettings(partial);
+  await updateSettings(partial);
   revalidatePath("/", "layout");
   return { error: null, success: true };
 }
@@ -47,14 +47,9 @@ export async function updatePasswordAction(
   const admin = await getCurrentAdmin();
   if (!admin) return { error: "Sesión expirada, vuelve a iniciar sesión." };
 
-  const currentPassword = String(formData.get("currentPassword") || "");
   const newPassword = String(formData.get("newPassword") || "");
   const confirmPassword = String(formData.get("confirmPassword") || "");
 
-  const record = findAdminByEmail(admin.email);
-  if (!record || !verifyPassword(currentPassword, record.password_hash)) {
-    return { error: "La contraseña actual no es correcta." };
-  }
   if (newPassword.length < 8) {
     return { error: "La nueva contraseña debe tener al menos 8 caracteres." };
   }
@@ -62,6 +57,6 @@ export async function updatePasswordAction(
     return { error: "Las contraseñas nuevas no coinciden." };
   }
 
-  updateAdminPassword(admin.email, newPassword);
+  await updateAdminPassword(admin.uid, newPassword);
   return { error: null, success: true };
 }

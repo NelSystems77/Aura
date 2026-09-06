@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Todo el acceso a Firestore pasa por el servidor de Next.js usando el
+// Admin SDK (que ignora estas reglas). Este archivo solo protege por si
+// alguna vez se intenta leer/escribir directamente desde el navegador:
+// se deniega todo por defecto.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

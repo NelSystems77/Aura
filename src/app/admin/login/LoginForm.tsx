@@ -1,16 +1,40 @@
 "use client";
 
-import { useActionState } from "react";
-import { loginAction, type LoginState } from "@/lib/actions/auth-actions";
-
-const initialState: LoginState = { error: null };
+import { useState, useTransition } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { getClientAuth } from "@/lib/firebase-client";
+import { createSessionAction } from "@/lib/actions/auth-actions";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
+    startTransition(async () => {
+      let idToken: string;
+      try {
+        const credential = await signInWithEmailAndPassword(getClientAuth(), email, password);
+        idToken = await credential.user.getIdToken();
+      } catch {
+        setError("Correo o contraseña incorrectos.");
+        return;
+      }
+
+      const result = await createSessionAction(idToken, nextPath);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
 
   return (
-    <form action={formAction} className="mt-8 space-y-4">
-      <input type="hidden" name="next" value={nextPath} />
+    <form onSubmit={handleSubmit} className="mt-8 space-y-4">
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">
           Correo
@@ -36,8 +60,8 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         />
       </div>
 
-      {state.error && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{state.error}</p>
+      {error && (
+        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>
       )}
 
       <button

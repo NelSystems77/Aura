@@ -3,7 +3,7 @@ import { SettingsForm } from "./SettingsForm";
 import { PasswordForm } from "./PasswordForm";
 
 export default async function AdminSettingsPage() {
-  const settings = getSettings();
+  const settings = await getSettings();
 
   return (
     <div className="space-y-12">

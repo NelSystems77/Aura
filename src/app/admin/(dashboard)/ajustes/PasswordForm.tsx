@@ -14,10 +14,6 @@ export function PasswordForm() {
   return (
     <form action={formAction} className="max-w-sm space-y-4">
       <div>
-        <label className={labelClass}>Contraseña actual</label>
-        <input name="currentPassword" type="password" required className={inputClass} />
-      </div>
-      <div>
         <label className={labelClass}>Nueva contraseña</label>
         <input name="newPassword" type="password" required minLength={8} className={inputClass} />
       </div>

@@ -1,48 +1,17 @@
-import { getDb } from "@/lib/db";
+import "server-only";
+import { getAdminDb } from "@/lib/firebase-admin";
 import type { Gender, Product, ProductInput } from "@/lib/types";
 
-type ProductRow = {
-  id: number;
-  slug: string;
-  name: string;
-  brand: string;
-  gender: string;
-  size: string | null;
-  regular_price: number;
-  current_price: number;
-  on_offer: number;
-  available: number;
-  is_new: number;
-  featured: number;
-  tags: string;
-  description: string;
-  image_url: string | null;
-  source_url: string | null;
-  created_at: string;
-  updated_at: string;
-};
+const COLLECTION = "products";
 
-function rowToProduct(row: ProductRow): Product {
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    brand: row.brand,
-    gender: row.gender as Gender,
-    size: row.size,
-    regularPrice: row.regular_price,
-    currentPrice: row.current_price,
-    onOffer: !!row.on_offer,
-    available: !!row.available,
-    isNew: !!row.is_new,
-    featured: !!row.featured,
-    tags: JSON.parse(row.tags || "[]"),
-    description: row.description || "",
-    imageUrl: row.image_url,
-    sourceUrl: row.source_url,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+type ProductDoc = Omit<Product, "id">;
+
+function docToProduct(
+  doc: FirebaseFirestore.DocumentSnapshot | FirebaseFirestore.QueryDocumentSnapshot
+): Product | null {
+  if (!doc.exists) return null;
+  const data = doc.data() as ProductDoc;
+  return { id: doc.id, ...data };
 }
 
 export type ProductFilters = {
@@ -58,90 +27,68 @@ export type ProductFilters = {
   q?: string;
 };
 
-export function listProducts(filters: ProductFilters = {}): Product[] {
-  const db = getDb();
-  const clauses: string[] = [];
-  const params: (string | number)[] = [];
+function sortProducts(list: Product[]): Product[] {
+  return [...list].sort((a, b) => {
+    if (a.available !== b.available) return a.available ? -1 : 1;
+    if (a.featured !== b.featured) return a.featured ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
 
-  if (filters.gender) {
-    clauses.push("gender = ?");
-    params.push(filters.gender);
-  }
-  if (filters.brand) {
-    clauses.push("brand = ?");
-    params.push(filters.brand);
-  }
-  if (filters.onOffer !== undefined) {
-    clauses.push("on_offer = ?");
-    params.push(filters.onOffer ? 1 : 0);
-  }
-  if (filters.available !== undefined) {
-    clauses.push("available = ?");
-    params.push(filters.available ? 1 : 0);
-  }
-  if (filters.isNew !== undefined) {
-    clauses.push("is_new = ?");
-    params.push(filters.isNew ? 1 : 0);
-  }
-  if (filters.featured !== undefined) {
-    clauses.push("featured = ?");
-    params.push(filters.featured ? 1 : 0);
-  }
-  if (filters.minPrice !== undefined) {
-    clauses.push("current_price >= ?");
-    params.push(filters.minPrice);
-  }
-  if (filters.maxPrice !== undefined) {
-    clauses.push("current_price <= ?");
-    params.push(filters.maxPrice);
-  }
-  if (filters.tag) {
-    clauses.push("tags LIKE ?");
-    params.push(`%"${filters.tag}"%`);
-  }
+export async function listProducts(filters: ProductFilters = {}): Promise<Product[]> {
+  const db = getAdminDb();
+  const base: FirebaseFirestore.Query = filters.gender
+    ? db.collection(COLLECTION).where("gender", "==", filters.gender)
+    : db.collection(COLLECTION);
+
+  const snapshot = await base.get();
+  let list = snapshot.docs
+    .map(docToProduct)
+    .filter((p): p is Product => p !== null);
+
+  if (filters.brand) list = list.filter((p) => p.brand === filters.brand);
+  if (filters.onOffer !== undefined) list = list.filter((p) => p.onOffer === filters.onOffer);
+  if (filters.available !== undefined) list = list.filter((p) => p.available === filters.available);
+  if (filters.isNew !== undefined) list = list.filter((p) => p.isNew === filters.isNew);
+  if (filters.featured !== undefined) list = list.filter((p) => p.featured === filters.featured);
+  if (filters.minPrice !== undefined) list = list.filter((p) => p.currentPrice >= filters.minPrice!);
+  if (filters.maxPrice !== undefined) list = list.filter((p) => p.currentPrice <= filters.maxPrice!);
+  if (filters.tag) list = list.filter((p) => p.tags.includes(filters.tag!));
   if (filters.q) {
-    clauses.push("(name LIKE ? OR brand LIKE ?)");
-    const like = `%${filters.q}%`;
-    params.push(like, like);
+    const q = filters.q.toLowerCase();
+    list = list.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)
+    );
   }
 
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const stmt = db.prepare(
-    `SELECT * FROM products ${where} ORDER BY available DESC, featured DESC, name ASC`
-  );
-  const rows = stmt.all(...params) as unknown as ProductRow[];
-  return rows.map(rowToProduct);
+  return sortProducts(list);
 }
 
-export function getProductBySlug(slug: string): Product | null {
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM products WHERE slug = ?").get(slug) as
-    | ProductRow
-    | undefined;
-  return row ? rowToProduct(row) : null;
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const db = getAdminDb();
+  const doc = await db.collection(COLLECTION).doc(slug).get();
+  return docToProduct(doc);
 }
 
-export function getProductById(id: number): Product | null {
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM products WHERE id = ?").get(id) as
-    | ProductRow
-    | undefined;
-  return row ? rowToProduct(row) : null;
+export async function getProductById(id: string): Promise<Product | null> {
+  return getProductBySlug(id);
 }
 
-export function listBrands(gender?: Gender): string[] {
-  const db = getDb();
-  const rows = gender
-    ? (db
-        .prepare("SELECT DISTINCT brand FROM products WHERE gender = ? ORDER BY brand ASC")
-        .all(gender) as { brand: string }[])
-    : (db.prepare("SELECT DISTINCT brand FROM products ORDER BY brand ASC").all() as {
-        brand: string;
-      }[]);
-  return rows.map((r) => r.brand).filter(Boolean);
+export async function listBrands(gender?: Gender): Promise<string[]> {
+  const db = getAdminDb();
+  const base = gender
+    ? db.collection(COLLECTION).where("gender", "==", gender)
+    : db.collection(COLLECTION);
+  const snapshot = await base.select("brand").get();
+  const brands = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const brand = doc.get("brand");
+    if (brand) brands.add(brand as string);
+  });
+  return Array.from(brands).sort((a, b) => a.localeCompare(b));
 }
 
-export function countProducts(): {
+export async function countProducts(): Promise<{
   total: number;
   hombre: number;
   mujer: number;
@@ -149,103 +96,81 @@ export function countProducts(): {
   outOfStock: number;
   isNew: number;
   featured: number;
-} {
-  const db = getDb();
-  const get = (sql: string) => (db.prepare(sql).get() as { c: number }).c;
+}> {
+  const db = getAdminDb();
+  const col = db.collection(COLLECTION);
+  const [total, hombre, mujer, onOffer, outOfStock, isNew, featured] = await Promise.all([
+    col.count().get(),
+    col.where("gender", "==", "hombre").count().get(),
+    col.where("gender", "==", "mujer").count().get(),
+    col.where("onOffer", "==", true).count().get(),
+    col.where("available", "==", false).count().get(),
+    col.where("isNew", "==", true).count().get(),
+    col.where("featured", "==", true).count().get(),
+  ]);
   return {
-    total: get("SELECT COUNT(*) as c FROM products"),
-    hombre: get("SELECT COUNT(*) as c FROM products WHERE gender='hombre'"),
-    mujer: get("SELECT COUNT(*) as c FROM products WHERE gender='mujer'"),
-    onOffer: get("SELECT COUNT(*) as c FROM products WHERE on_offer=1"),
-    outOfStock: get("SELECT COUNT(*) as c FROM products WHERE available=0"),
-    isNew: get("SELECT COUNT(*) as c FROM products WHERE is_new=1"),
-    featured: get("SELECT COUNT(*) as c FROM products WHERE featured=1"),
+    total: total.data().count,
+    hombre: hombre.data().count,
+    mujer: mujer.data().count,
+    onOffer: onOffer.data().count,
+    outOfStock: outOfStock.data().count,
+    isNew: isNew.data().count,
+    featured: featured.data().count,
   };
 }
 
-export function insertProduct(input: ProductInput): Product {
-  const db = getDb();
-  const stmt = db.prepare(`
-    INSERT INTO products
-      (slug, name, brand, gender, size, regular_price, current_price, on_offer, available, is_new, featured, tags, description, image_url, source_url, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-  `);
-  const info = stmt.run(
-    input.slug,
-    input.name,
-    input.brand,
-    input.gender,
-    input.size ?? null,
-    input.regularPrice,
-    input.currentPrice,
-    input.onOffer ? 1 : 0,
-    input.available ? 1 : 0,
-    input.isNew ? 1 : 0,
-    input.featured ? 1 : 0,
-    JSON.stringify(input.tags || []),
-    input.description ?? "",
-    input.imageUrl ?? null,
-    input.sourceUrl ?? null
-  );
-  return getProductById(Number(info.lastInsertRowid))!;
-}
-
-export function updateProduct(id: number, input: Partial<ProductInput>): Product | null {
-  const current = getProductById(id);
-  if (!current) return null;
-  const merged: ProductInput = {
-    slug: input.slug ?? current.slug,
-    name: input.name ?? current.name,
-    brand: input.brand ?? current.brand,
-    gender: input.gender ?? current.gender,
-    size: input.size !== undefined ? input.size : current.size,
-    regularPrice: input.regularPrice ?? current.regularPrice,
-    currentPrice: input.currentPrice ?? current.currentPrice,
-    onOffer: input.onOffer !== undefined ? input.onOffer : current.onOffer,
-    available: input.available !== undefined ? input.available : current.available,
-    isNew: input.isNew !== undefined ? input.isNew : current.isNew,
-    featured: input.featured !== undefined ? input.featured : current.featured,
-    tags: input.tags ?? current.tags,
-    description: input.description !== undefined ? input.description : current.description,
-    imageUrl: input.imageUrl !== undefined ? input.imageUrl : current.imageUrl,
-    sourceUrl: input.sourceUrl !== undefined ? input.sourceUrl : current.sourceUrl,
+function toDoc(input: ProductInput, now: string): ProductDoc {
+  return {
+    slug: input.slug,
+    name: input.name,
+    brand: input.brand,
+    gender: input.gender,
+    size: input.size ?? null,
+    regularPrice: input.regularPrice,
+    currentPrice: input.currentPrice,
+    onOffer: input.onOffer,
+    available: input.available,
+    isNew: input.isNew,
+    featured: input.featured,
+    tags: input.tags || [],
+    description: input.description ?? "",
+    imageUrl: input.imageUrl ?? null,
+    sourceUrl: input.sourceUrl ?? null,
+    createdAt: now,
+    updatedAt: now,
   };
-  const db = getDb();
-  db.prepare(
-    `
-    UPDATE products SET
-      slug = ?, name = ?, brand = ?, gender = ?, size = ?, regular_price = ?, current_price = ?,
-      on_offer = ?, available = ?, is_new = ?, featured = ?, tags = ?, description = ?,
-      image_url = ?, source_url = ?, updated_at = datetime('now')
-    WHERE id = ?
-  `
-  ).run(
-    merged.slug,
-    merged.name,
-    merged.brand,
-    merged.gender,
-    merged.size ?? null,
-    merged.regularPrice,
-    merged.currentPrice,
-    merged.onOffer ? 1 : 0,
-    merged.available ? 1 : 0,
-    merged.isNew ? 1 : 0,
-    merged.featured ? 1 : 0,
-    JSON.stringify(merged.tags || []),
-    merged.description ?? "",
-    merged.imageUrl ?? null,
-    merged.sourceUrl ?? null,
-    id
-  );
-  return getProductById(id);
 }
 
-export function deleteProduct(id: number): void {
-  const db = getDb();
-  db.prepare("DELETE FROM products WHERE id = ?").run(id);
+export async function insertProduct(input: ProductInput): Promise<Product> {
+  const db = getAdminDb();
+  const now = new Date().toISOString();
+  const doc = toDoc(input, now);
+  await db.collection(COLLECTION).doc(input.slug).set(doc);
+  return { id: input.slug, ...doc };
 }
 
-export function countSeededProducts(): number {
-  const db = getDb();
-  return (db.prepare("SELECT COUNT(*) as c FROM products").get() as { c: number }).c;
+export async function updateProduct(
+  id: string,
+  input: Partial<ProductInput>
+): Promise<Product | null> {
+  const db = getAdminDb();
+  const ref = db.collection(COLLECTION).doc(id);
+  const current = await ref.get();
+  if (!current.exists) return null;
+
+  const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined && key !== "slug") {
+      patch[key] = value;
+    }
+  }
+
+  await ref.update(patch);
+  const updated = await ref.get();
+  return docToProduct(updated);
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const db = getAdminDb();
+  await db.collection(COLLECTION).doc(id).delete();
 }

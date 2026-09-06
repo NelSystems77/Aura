@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Playfair_Display, Cinzel, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
-import { getSettings } from "@/lib/repo/settings";
+import { DEFAULT_SETTINGS } from "@/lib/types";
 
 const body = Manrope({
   variable: "--font-body",
@@ -29,33 +29,34 @@ const garamond = Cormorant_Garamond({
   weight: ["400", "500", "600", "700"],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = getSettings();
-  return {
-    metadataBase: new URL(process.env.SITE_URL || "https://aura-perfumeria.com"),
-    title: {
-      default: `${settings.siteName} — ${settings.siteTagline}`,
-      template: `%s · ${settings.siteName}`,
-    },
-    description: settings.seoDescription,
-    openGraph: {
-      title: settings.siteName,
-      description: settings.seoDescription,
-      siteName: settings.siteName,
-      locale: "es_CR",
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: settings.siteName,
-      description: settings.seoDescription,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
-  };
-}
+// Metadata estática (sin llamadas a Firestore): el layout raíz también envuelve
+// rutas estáticas como /_not-found, que se generan en build sin acceso a la BD.
+// El contenido dinámico de ajustes del sitio se aplica en app/(site)/layout.tsx,
+// cuyas rutas son siempre dinámicas.
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.SITE_URL || "https://aura-perfumeria.com"),
+  title: {
+    default: `${DEFAULT_SETTINGS.siteName} — ${DEFAULT_SETTINGS.siteTagline}`,
+    template: `%s · ${DEFAULT_SETTINGS.siteName}`,
+  },
+  description: DEFAULT_SETTINGS.seoDescription,
+  openGraph: {
+    title: DEFAULT_SETTINGS.siteName,
+    description: DEFAULT_SETTINGS.seoDescription,
+    siteName: DEFAULT_SETTINGS.siteName,
+    locale: "es_CR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_SETTINGS.siteName,
+    description: DEFAULT_SETTINGS.seoDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

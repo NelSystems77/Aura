@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth-core";
+import { SESSION_COOKIE_NAME, verifySessionCookieToken } from "@/lib/session";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!pathname.startsWith("/admin")) {
@@ -11,7 +11,7 @@ export function proxy(request: NextRequest) {
 
   const isLoginPage = pathname === "/admin/login";
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const session = verifySessionToken(token);
+  const session = await verifySessionCookieToken(token);
 
   if (!session && !isLoginPage) {
     const loginUrl = new URL("/admin/login", request.url);

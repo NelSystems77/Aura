@@ -2,7 +2,7 @@
 
 import { deleteProductAction } from "@/lib/actions/product-actions";
 
-export function DeleteButton({ id }: { id: number }) {
+export function DeleteButton({ id }: { id: string }) {
   return (
     <form
       action={deleteProductAction}

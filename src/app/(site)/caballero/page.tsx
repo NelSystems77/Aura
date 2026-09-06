@@ -8,7 +8,7 @@ import { Container } from "@/components/ui/Container";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = getSettings();
+  const settings = await getSettings();
   return {
     title: "Zona Caballero — Colonias para hombre",
     description: `${settings.heroSubtitleHombre}. Compra directa por WhatsApp.`,
@@ -16,9 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CaballeroPage() {
-  const settings = getSettings();
-  const products = listProducts({ gender: "hombre" });
-  const brands = listBrands("hombre");
+  const [settings, products, brands] = await Promise.all([
+    getSettings(),
+    listProducts({ gender: "hombre" }),
+    listBrands("hombre"),
+  ]);
 
   return (
     <div className="zone-hombre min-h-screen">

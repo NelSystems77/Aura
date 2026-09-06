@@ -10,7 +10,7 @@ export function ToggleButton({
   labelOn,
   labelOff,
 }: {
-  id: number;
+  id: string;
   field: "onOffer" | "available" | "isNew" | "featured";
   active: boolean;
   labelOn: string;

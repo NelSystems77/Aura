@@ -1,47 +1,77 @@
 # AURA Perfumería
 
 Tienda en línea de lujo para venta de colonias y perfumes (Zona Caballero / Zona Dama), con
-compra directa por WhatsApp y panel de administración propio.
+compra directa por WhatsApp y panel de administración propio. Desplegado 100% en Firebase.
 
 ## Stack
 
 - **Next.js 16** (App Router, React 19, Turbopack) + **TypeScript** + **Tailwind CSS v4**
-- **Base de datos**: SQLite nativo de Node (`node:sqlite`), sin dependencias externas ni
-  servicios en la nube. El archivo vive en `var/data/aura.db`.
-- **Autenticación admin**: cookie de sesión firmada (HMAC), sin librerías externas.
+- **Base de datos**: Cloud Firestore, vía Firebase Admin SDK (solo desde el servidor).
+- **Autenticación admin**: Firebase Authentication (correo/contraseña) + cookie de sesión
+  httpOnly creada con el Admin SDK (`createSessionCookie`). Solo los UID listados en
+  `ADMIN_UIDS` pueden entrar a `/admin`.
+- **Hosting**: Firebase App Hosting (soporta SSR de Next.js de forma nativa).
 - **Animaciones**: Framer Motion. **Búsqueda**: Fuse.js + diccionario de sinónimos en español
   (sin API externa de IA).
 - **Compra**: deep link de WhatsApp (`wa.me`) con el mensaje y precio del producto prellenado.
 
+Proyecto de Firebase: **aura-e7a0e**.
+
 ## Requisitos
 
-- Node.js **22.5 o superior** (usa `node:sqlite`, disponible desde esa versión).
-- O bien Docker, si prefieres desplegar en contenedor (ver más abajo).
+- Node.js 20.9 o superior.
+- [Firebase CLI](https://firebase.google.com/docs/cli) (`npm install -g firebase-tools`, o se
+  usa vía `npx` como en los scripts de este proyecto).
+- Java (solo para correr los emuladores de Firestore/Auth en desarrollo local).
 
-## Desarrollo local
+## Desarrollo local (con emuladores)
+
+Los emuladores dejan probar todo el sitio y el panel admin **sin tocar los datos reales**.
 
 ```bash
 npm install
-cp .env.example .env.local   # y ajusta los valores
-npm run db:seed              # crea el admin inicial y carga los 702 productos del catálogo
+cp .env.example .env.local
+# Descomenta/ajusta las 3 líneas de emulador en .env.local si no están
+```
+
+En una terminal:
+
+```bash
+npm run emulators
+```
+
+En otra terminal, importa el catálogo (702 productos) y crea usuarios de prueba con los
+mismos UID que los administradores reales (no afecta producción):
+
+```bash
+npm run db:seed
+```
+
+Esto imprime credenciales de prueba tipo `admin1@aura.test / AuraAdmin123!` — úsalas para
+entrar a `/admin/login` en local.
+
+Luego:
+
+```bash
 npm run dev
 ```
 
-Abre http://localhost:3000. El panel de administración está en
-http://localhost:3000/admin/login (credenciales definidas por `ADMIN_EMAIL` / `ADMIN_PASSWORD`
-al correr el seed la primera vez).
+Abre http://localhost:3000. Panel admin en http://localhost:3000/admin/login.
 
 ## Variables de entorno
 
 Ver `.env.example`. Las más importantes:
 
-| Variable          | Descripción                                                             |
-| ----------------- | ------------------------------------------------------------------------ |
-| `SESSION_SECRET`  | Secreto para firmar la cookie del panel admin. Genera uno con `openssl rand -hex 32`. |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Credenciales del primer usuario admin (solo se usan en el primer `db:seed`). |
+| Variable | Descripción |
+| --- | --- |
+| `NEXT_PUBLIC_FIREBASE_*` | Config pública del proyecto de Firebase (no es secreta). Se obtiene en Firebase Console → Configuración del proyecto → Tus apps → Web. |
+| `ADMIN_UIDS` | UIDs de Firebase Authentication autorizados a usar `/admin`, separados por coma. |
 | `WHATSAPP_NUMBER` | Número de WhatsApp para recibir pedidos (código de país + número, sin `+`). |
-| `DB_PATH`         | Ruta del archivo SQLite (por defecto `./var/data/aura.db`).             |
-| `SITE_URL`        | URL pública del sitio, usada en SEO, sitemap y JSON-LD.                 |
+| `SITE_URL` | URL pública del sitio, usada en SEO, sitemap y JSON-LD. |
+
+**No hace falta ninguna clave de cuenta de servicio.** En Firebase App Hosting, el Admin SDK
+se autentica solo (Application Default Credentials). En local, los emuladores tampoco piden
+credenciales reales.
 
 ## Panel de administración
 
@@ -49,79 +79,68 @@ Desde `/admin` puedes gestionar:
 
 - **Productos** (`/admin/productos`): buscar, filtrar, crear, editar y eliminar; marcar
   oferta / disponible / nuevo ingreso / destacado con un clic; asignar foto real (URL) a cada
-  producto (mientras no se suba una, se muestra una ilustración de lujo generada automáticamente).
+  producto (mientras no se suba una, se muestra una ilustración de lujo generada
+  automáticamente).
 - **Carrusel de inicio** (`/admin/carrusel`): slides con imagen, texto, enlace y tema visual
   (Caballero / Dama / general).
 - **Ajustes** (`/admin/ajustes`): número de WhatsApp, textos de cada zona, SEO, redes sociales
-  y cambio de contraseña del admin.
+  y cambio de contraseña del admin (usa Firebase Auth directamente, sin pedir la actual).
 
 Los cambios se reflejan de inmediato en el sitio público (sin necesidad de recompilar).
 
-## Despliegue en un VPS propio
+## Despliegue en Firebase (producción)
 
-### Opción A — Docker (recomendada)
+1. Autentícate y enlaza el proyecto (una sola vez):
 
-```bash
-git clone <tu-repo> aura && cd aura
-cp .env.example .env   # ajusta SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, WHATSAPP_NUMBER, SITE_URL
-docker compose up -d --build
-```
+   ```bash
+   npx firebase login
+   npx firebase use aura-e7a0e
+   ```
 
-El contenedor corre el seed automáticamente en cada arranque (es seguro: si ya existen
-productos, no los vuelve a importar) y expone el sitio en el puerto `3000`. Los datos
-(SQLite) se guardan en el volumen `aura-data`, así que sobreviven a rebuilds y actualizaciones.
+2. Reglas de Firestore (deniegan todo acceso directo desde el cliente; el sitio solo lee/escribe
+   vía el servidor con el Admin SDK):
 
-Coloca un reverse proxy (Nginx o Caddy) delante para servir HTTPS:
+   ```bash
+   npx firebase deploy --only firestore:rules
+   ```
 
-```nginx
-server {
-    listen 80;
-    server_name tu-dominio.com;
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+3. **App Hosting**: crea el backend una sola vez desde Firebase Console → App Hosting → "Get
+   started", conectando este repositorio de GitHub y la rama de producción. A partir de ahí,
+   cada push a esa rama despliega automáticamente (build + SSR administrado por Firebase).
 
-Luego `certbot --nginx -d tu-dominio.com` para el certificado TLS.
+   Los valores de entorno productivos se configuran en `apphosting.yaml` (ya incluido en el
+   repo) — edítalo con los valores reales de `NEXT_PUBLIC_FIREBASE_API_KEY` y
+   `NEXT_PUBLIC_FIREBASE_APP_ID` (los únicos que faltan) antes del primer deploy. Para mover
+   `ADMIN_UIDS` a Secret Manager en vez de texto plano:
 
-### Opción B — Node + PM2 (sin Docker)
+   ```bash
+   npx firebase apphosting:secrets:set ADMIN_UIDS
+   ```
 
-Requiere Node 22.5+ instalado en el VPS.
+   y luego referenciarlo en `apphosting.yaml` con `secret: ADMIN_UIDS` en vez de `value:`.
 
-```bash
-git clone <tu-repo> aura && cd aura
-npm ci
-cp .env.example .env
-npm run build
-npm run db:seed
-npm install -g pm2
-pm2 start "npm run start" --name aura
-pm2 save
-pm2 startup   # sigue las instrucciones para arranque automático
-```
+4. **Cargar el catálogo en producción** (una sola vez, o cuando quieras reimportar desde el
+   Excel original): corre el seed con credenciales de una cuenta con acceso de escritura a
+   Firestore del proyecto, por ejemplo desde Cloud Shell o tu máquina con
+   `gcloud auth application-default login`:
 
-Igual que en la Opción A, coloca Nginx + certbot delante para HTTPS.
+   ```bash
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=aura-e7a0e node scripts/seed.mjs
+   ```
 
-### Backups
-
-El único estado persistente es el archivo SQLite. Respáldalo periódicamente:
-
-```bash
-cp var/data/aura.db backups/aura-$(date +%F).db
-```
+   El script no reimporta si ya existen productos, así que es seguro correrlo más de una vez.
 
 ## Estructura del proyecto
 
 ```
 src/app/(site)/       Páginas públicas (inicio, /caballero, /dama, /ofertas, /producto/[slug]…)
-src/app/admin/        Panel de administración (protegido por sesión)
+src/app/admin/        Panel de administración (protegido por sesión de Firebase Auth)
 src/app/api/search/   Endpoint de búsqueda inteligente
 src/components/       Componentes de UI compartidos
-src/lib/               Acceso a datos (SQLite), autenticación, WhatsApp, búsqueda, formato
-scripts/seed.mjs      Script de importación inicial de catálogo + creación de admin
+src/lib/firebase-admin.ts / firebase-client.ts   Inicialización de Firebase (servidor/cliente)
+src/lib/repo/         Acceso a datos en Firestore (productos, carrusel, ajustes)
+src/lib/auth.ts, session.ts, proxy.ts   Autenticación y protección de /admin
+scripts/seed.mjs      Importa el catálogo y crea datos/ususarios de prueba en el emulador
 data/products-seed.json  Catálogo normalizado (702 productos) generado a partir del Excel original
+firebase.json, firestore.rules, apphosting.yaml   Configuración de Firebase
 ```

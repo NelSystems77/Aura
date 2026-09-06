@@ -1,0 +1,59 @@
+# Configuración de Firebase App Hosting para el sitio AURA (Next.js 16).
+# Referencia: https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  minInstances: 0
+  maxInstances: 3
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  # Config pública de Firebase (segura de exponer en el cliente).
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: ""
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "aura-e7a0e.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "aura-e7a0e"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: ""
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "727315067021"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: ""
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # UIDs de administradores separados por coma. Recomendado moverlo a
+  # Secret Manager con: firebase apphosting:secrets:set ADMIN_UIDS
+  - variable: ADMIN_UIDS
+    value: "6LL9eSFiH9UBqkrqwuMPnagtgKI2,niFJXb9arkQFdIuF2g2kT3IVn0Z2"
+    availability:
+      - RUNTIME
+
+  - variable: WHATSAPP_NUMBER
+    value: "50687409343"
+    availability:
+      - RUNTIME
+
+  - variable: SITE_URL
+    value: "https://aura-e7a0e.web.app"
+    availability:
+      - BUILD
+      - RUNTIME

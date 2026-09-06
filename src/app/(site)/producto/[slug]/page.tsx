@@ -18,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return {};
 
   const title = `${product.name} — ${formatColones(product.currentPrice)}`;
@@ -45,19 +45,18 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const settings = getSettings();
+  const settings = await getSettings();
   const siteUrl = process.env.SITE_URL || "https://aura-perfumeria.com";
   const waLink = buildWhatsAppLink(
     settings.whatsappNumber,
     buildProductWhatsAppMessage(product, siteUrl)
   );
   const discount = formatDiscountPercent(product.regularPrice, product.currentPrice);
-  const related = listProducts({ gender: product.gender, brand: product.brand })
-    .filter((p) => p.id !== product.id)
-    .slice(0, 5);
+  const relatedAll = await listProducts({ gender: product.gender, brand: product.brand });
+  const related = relatedAll.filter((p) => p.id !== product.id).slice(0, 5);
 
   const zoneClass = product.gender === "hombre" ? "zone-hombre" : "zone-mujer";
   const zoneHref = product.gender === "hombre" ? "/caballero" : "/dama";

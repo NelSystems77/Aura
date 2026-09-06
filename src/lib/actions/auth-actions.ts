@@ -1,26 +1,19 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { findAdminByEmail, setSessionCookie, clearSessionCookie, verifyPassword } from "@/lib/auth";
+import { createSessionCookieFromIdToken, clearSessionCookie } from "@/lib/auth";
 
-export type LoginState = { error: string | null };
+export type SessionActionResult = { error: string } | undefined;
 
-export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
-  const next = String(formData.get("next") || "/admin");
-
-  if (!email || !password) {
-    return { error: "Ingresa correo y contraseña." };
+export async function createSessionAction(
+  idToken: string,
+  next: string
+): Promise<SessionActionResult> {
+  const result = await createSessionCookieFromIdToken(idToken);
+  if (!result.ok) {
+    return { error: result.error };
   }
-
-  const admin = findAdminByEmail(email);
-  if (!admin || !verifyPassword(password, admin.password_hash)) {
-    return { error: "Credenciales incorrectas." };
-  }
-
-  await setSessionCookie(admin.email);
-  redirect(next.startsWith("/admin") ? next : "/admin");
+  redirect(next && next.startsWith("/admin") ? next : "/admin");
 }
 
 export async function logoutAction() {

@@ -33,19 +33,24 @@ const VALUE_PROPS = [
 ];
 
 export default async function HomePage() {
-  const settings = getSettings();
-  const slides = listSlides(true);
+  const settings = await getSettings();
+  const slides = await listSlides(true);
 
-  const onOffer = listProducts({ available: true, onOffer: true }).slice(0, 10);
-  const featured = listProducts({ available: true, featured: true }).slice(0, 10);
-  const isNew = listProducts({ available: true, isNew: true }).slice(0, 10);
+  const [onOfferAll, featuredAll, isNewAll] = await Promise.all([
+    listProducts({ available: true, onOffer: true }),
+    listProducts({ available: true, featured: true }),
+    listProducts({ available: true, isNew: true }),
+  ]);
+  const onOffer = onOfferAll.slice(0, 10);
+  const featured = featuredAll.slice(0, 10);
+  const isNew = isNewAll.slice(0, 10);
 
   const heroSlides =
     slides.length > 0
       ? slides
       : [
           {
-            id: 0,
+            id: "fallback-hombre",
             title: settings.heroTitleHombre,
             subtitle: settings.heroSubtitleHombre,
             imageUrl: null,
@@ -58,7 +63,7 @@ export default async function HomePage() {
             updatedAt: "",
           },
           {
-            id: -1,
+            id: "fallback-mujer",
             title: settings.heroTitleMujer,
             subtitle: settings.heroSubtitleMujer,
             imageUrl: null,

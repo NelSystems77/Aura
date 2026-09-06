@@ -17,8 +17,7 @@ export async function upsertSlideAction(
   _prev: SlideFormState,
   formData: FormData
 ): Promise<SlideFormState> {
-  const idRaw = formData.get("id");
-  const id = idRaw ? Number(idRaw) : null;
+  const id = String(formData.get("id") || "");
 
   const title = String(formData.get("title") || "").trim();
   const subtitle = String(formData.get("subtitle") || "").trim();
@@ -45,9 +44,9 @@ export async function upsertSlideAction(
   };
 
   if (id) {
-    updateSlide(id, input);
+    await updateSlide(id, input);
   } else {
-    insertSlide(input);
+    await insertSlide(input);
   }
 
   revalidateHome();
@@ -55,9 +54,9 @@ export async function upsertSlideAction(
 }
 
 export async function deleteSlideAction(formData: FormData) {
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") || "");
   if (!id) return;
-  deleteSlide(id);
+  await deleteSlide(id);
   revalidateHome();
   redirect("/admin/carrusel");
 }

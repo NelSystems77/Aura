@@ -1,172 +1,151 @@
-// Seed script: crea el usuario admin inicial y carga el catálogo de productos.
-// Ejecutar con: npm run db:seed
-import { DatabaseSync } from "node:sqlite";
-import { randomBytes, scryptSync } from "node:crypto";
+// Seed script: carga el catálogo de productos y los ajustes por defecto en
+// Firestore. En modo emulador, además crea usuarios de prueba en Firebase
+// Auth con los mismos UID de los administradores reales, para poder probar
+// el login localmente sin tocar las cuentas de producción.
+//
+// Uso:
+//   Contra el emulador:  firebase emulators:exec "node scripts/seed.mjs"
+//   Contra producción:   GOOGLE_APPLICATION_CREDENTIALS=... node scripts/seed.mjs
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const DB_PATH = process.env.DB_PATH || path.join(ROOT, "var", "data", "aura.db");
 const SEED_FILE = path.join(ROOT, "data", "products-seed.json");
 
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-const db = new DatabaseSync(DB_PATH);
-db.exec("PRAGMA journal_mode = WAL;");
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    brand TEXT NOT NULL DEFAULT '',
-    gender TEXT NOT NULL CHECK (gender IN ('hombre','mujer')),
-    size TEXT,
-    regular_price INTEGER NOT NULL DEFAULT 0,
-    current_price INTEGER NOT NULL DEFAULT 0,
-    on_offer INTEGER NOT NULL DEFAULT 0,
-    available INTEGER NOT NULL DEFAULT 1,
-    is_new INTEGER NOT NULL DEFAULT 0,
-    featured INTEGER NOT NULL DEFAULT 0,
-    tags TEXT NOT NULL DEFAULT '[]',
-    description TEXT NOT NULL DEFAULT '',
-    image_url TEXT,
-    source_url TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS carousel_slides (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    subtitle TEXT NOT NULL DEFAULT '',
-    image_url TEXT,
-    link_url TEXT NOT NULL DEFAULT '/',
-    cta_label TEXT NOT NULL DEFAULT 'Ver más',
-    gender_theme TEXT NOT NULL DEFAULT 'general',
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS admin_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+if (!projectId) {
+  console.error("Falta NEXT_PUBLIC_FIREBASE_PROJECT_ID en el entorno (.env).");
+  process.exit(1);
 }
 
-// --- Admin user ---
-const adminEmail = (process.env.ADMIN_EMAIL || "admin@aura.com").toLowerCase();
-const adminPassword = process.env.ADMIN_PASSWORD || "CambiaEsteClave123!";
-const existingAdmin = db
-  .prepare("SELECT id FROM admin_users WHERE email = ?")
-  .get(adminEmail);
+const isEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 
-if (!existingAdmin) {
-  db.prepare("INSERT INTO admin_users (email, password_hash) VALUES (?, ?)").run(
-    adminEmail,
-    hashPassword(adminPassword)
-  );
-  console.log(`✔ Usuario admin creado: ${adminEmail}`);
-  if (!process.env.ADMIN_PASSWORD) {
-    console.log(
-      `  Contraseña temporal: ${adminPassword}  (defínela vía ADMIN_PASSWORD en .env y vuelve a correr el seed para cambiarla)`
-    );
+initializeApp({ projectId });
+const db = getFirestore();
+const auth = getAuth();
+
+async function seedSettings() {
+  const ref = db.collection("settings").doc("site");
+  const snapshot = await ref.get();
+  if (snapshot.exists) {
+    console.log("— El documento de ajustes ya existe, no se sobrescribe.");
+    return;
   }
-} else {
-  console.log(`— Usuario admin ya existe: ${adminEmail} (sin cambios)`);
+  await ref.set({
+    whatsappNumber: process.env.WHATSAPP_NUMBER || "50687409343",
+    siteName: "AURA Perfumería",
+    siteTagline: "Fragancias de lujo, entrega inmediata",
+    heroTitleHombre: "El poder de tu presencia",
+    heroSubtitleHombre: "Colonias importadas para el hombre que no pasa desapercibido",
+    heroTitleMujer: "Tu esencia, tu poder",
+    heroSubtitleMujer: "Perfumes exclusivos para la mujer que sabe lo que quiere",
+    seoDescription:
+      "AURA Perfumería — catálogo exclusivo de colonias y perfumes originales para hombre y mujer. Compra directa por WhatsApp con entrega en Costa Rica.",
+    instagramUrl: "",
+    facebookUrl: "",
+  });
+  console.log("✔ Ajustes por defecto creados en settings/site");
 }
 
-// --- Default settings ---
-const defaultSettings = {
-  whatsappNumber: process.env.WHATSAPP_NUMBER || "50687409343",
-  siteName: "AURA Perfumería",
-  siteTagline: "Fragancias de lujo, entrega inmediata",
-  heroTitleHombre: "El poder de tu presencia",
-  heroSubtitleHombre: "Colonias importadas para el hombre que no pasa desapercibido",
-  heroTitleMujer: "Tu esencia, tu poder",
-  heroSubtitleMujer: "Perfumes exclusivos para la mujer que sabe lo que quiere",
-  seoDescription:
-    "AURA Perfumería — catálogo exclusivo de colonias y perfumes originales para hombre y mujer. Compra directa por WhatsApp con entrega en Costa Rica.",
-  instagramUrl: "",
-  facebookUrl: "",
-};
-const insertSetting = db.prepare(
-  `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING`
-);
-for (const [key, value] of Object.entries(defaultSettings)) {
-  insertSetting.run(key, String(value));
-}
+async function seedProducts() {
+  const col = db.collection("products");
+  const existing = await col.limit(1).get();
+  if (!existing.empty) {
+    console.log("— Ya existen productos en Firestore. No se reimporta (borra la colección para forzar).");
+    return;
+  }
 
-// --- Products ---
-const productCount = db.prepare("SELECT COUNT(*) as c FROM products").get().c;
+  const products = JSON.parse(fs.readFileSync(SEED_FILE, "utf-8"));
+  const now = new Date().toISOString();
 
-if (productCount > 0) {
-  console.log(`— Ya existen ${productCount} productos en la base de datos. No se reimporta.`);
-  console.log("  (Para reimportar desde cero, borra var/data/aura.db y vuelve a correr el seed.)");
-} else {
-  const raw = fs.readFileSync(SEED_FILE, "utf-8");
-  const products = JSON.parse(raw);
-
-  const insert = db.prepare(`
-    INSERT INTO products
-      (slug, name, brand, gender, size, regular_price, current_price, on_offer, available, is_new, featured, tags, description, image_url, source_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  db.exec("BEGIN");
+  const BATCH_SIZE = 400;
   let count = 0;
-  // Marca como "nuevo" una muestra representativa por género para poblar la sección de nuevos ingresos.
-  const newIndexesHombre = new Set();
-  const newIndexesMujer = new Set();
   let hIdx = 0;
   let mIdx = 0;
 
-  for (const p of products) {
-    let isNew = false;
-    if (p.gender === "hombre") {
-      isNew = hIdx % 15 === 0;
-      hIdx++;
-    } else {
-      isNew = mIdx % 15 === 0;
-      mIdx++;
-    }
-    const featured = p.onOffer && count % 3 === 0;
+  for (let i = 0; i < products.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = products.slice(i, i + BATCH_SIZE);
 
-    insert.run(
-      p.slug,
-      p.name,
-      p.brand,
-      p.gender,
-      p.size ?? null,
-      p.regularPrice ?? 0,
-      p.currentPrice ?? p.regularPrice ?? 0,
-      p.onOffer ? 1 : 0,
-      p.available ? 1 : 0,
-      isNew ? 1 : 0,
-      featured ? 1 : 0,
-      JSON.stringify(p.tags || []),
-      "",
-      null,
-      p.sourceUrl ?? null
-    );
-    count++;
+    for (const p of chunk) {
+      let isNew;
+      if (p.gender === "hombre") {
+        isNew = hIdx % 15 === 0;
+        hIdx++;
+      } else {
+        isNew = mIdx % 15 === 0;
+        mIdx++;
+      }
+      const featured = p.onOffer && count % 3 === 0;
+
+      const ref = col.doc(p.slug);
+      batch.set(ref, {
+        slug: p.slug,
+        name: p.name,
+        brand: p.brand,
+        gender: p.gender,
+        size: p.size ?? null,
+        regularPrice: p.regularPrice ?? 0,
+        currentPrice: p.currentPrice ?? p.regularPrice ?? 0,
+        onOffer: Boolean(p.onOffer),
+        available: Boolean(p.available),
+        isNew,
+        featured,
+        tags: p.tags || [],
+        description: "",
+        imageUrl: null,
+        sourceUrl: p.sourceUrl ?? null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      count++;
+    }
+
+    await batch.commit();
+    console.log(`  … ${Math.min(i + BATCH_SIZE, products.length)}/${products.length} productos`);
   }
-  db.exec("COMMIT");
-  console.log(`✔ ${count} productos importados desde data/products-seed.json`);
+
+  console.log(`✔ ${count} productos importados a Firestore`);
 }
 
-db.close();
-console.log("Seed completado.");
+async function seedEmulatorAdmins() {
+  if (!isEmulator) {
+    console.log("— Modo producción: se asume que los administradores ya existen en Firebase Auth.");
+    return;
+  }
+
+  const uids = (process.env.ADMIN_UIDS || "").split(",").map((v) => v.trim()).filter(Boolean);
+  if (uids.length === 0) {
+    console.log("— ADMIN_UIDS no está definido, no se crean usuarios de prueba.");
+    return;
+  }
+
+  for (const [i, uid] of uids.entries()) {
+    const email = `admin${i + 1}@aura.test`;
+    const password = "AuraAdmin123!";
+    try {
+      await auth.getUser(uid);
+      console.log(`— Usuario de prueba ${uid} ya existe en el emulador.`);
+    } catch {
+      await auth.createUser({ uid, email, password, emailVerified: true });
+      console.log(`✔ Usuario de prueba creado en el emulador: ${email} / ${password} (uid ${uid})`);
+    }
+  }
+}
+
+async function main() {
+  await seedSettings();
+  await seedProducts();
+  await seedEmulatorAdmins();
+  console.log("Seed completado.");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

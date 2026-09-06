@@ -34,14 +34,14 @@ const VALID_TOGGLE_FIELDS = ["onOffer", "available", "isNew", "featured"] as con
 type ToggleField = (typeof VALID_TOGGLE_FIELDS)[number];
 
 export async function toggleProductFlagAction(formData: FormData) {
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") || "");
   const field = String(formData.get("field")) as ToggleField;
   if (!id || !VALID_TOGGLE_FIELDS.includes(field)) return;
 
-  const product = getProductById(id);
+  const product = await getProductById(id);
   if (!product) return;
 
-  updateProduct(id, { [field]: !product[field] });
+  await updateProduct(id, { [field]: !product[field] });
   revalidatePublicRoutes();
   revalidatePath(`/producto/${product.slug}`);
 }
@@ -52,8 +52,7 @@ export async function upsertProductAction(
   _prev: ProductFormState,
   formData: FormData
 ): Promise<ProductFormState> {
-  const idRaw = formData.get("id");
-  const id = idRaw ? Number(idRaw) : null;
+  const id = String(formData.get("id") || "");
 
   const name = String(formData.get("name") || "").trim();
   const brand = String(formData.get("brand") || "").trim();
@@ -77,10 +76,8 @@ export async function upsertProductAction(
     return { error: "Nombre, marca y precio regular son obligatorios." };
   }
 
-  const baseSlug = slugify(`${gender}-${name}`);
-
   const input = {
-    slug: baseSlug,
+    slug: "",
     name,
     brand,
     gender,
@@ -97,15 +94,16 @@ export async function upsertProductAction(
   };
 
   if (id) {
-    updateProduct(id, input);
+    await updateProduct(id, input);
   } else {
+    const baseSlug = slugify(`${gender}-${name}`);
     let slug = baseSlug;
     let n = 2;
-    while (getProductBySlug(slug)) {
+    while (await getProductBySlug(slug)) {
       slug = `${baseSlug}-${n}`;
       n++;
     }
-    insertProduct({ ...input, slug });
+    await insertProduct({ ...input, slug });
   }
 
   revalidatePublicRoutes();
@@ -113,9 +111,9 @@ export async function upsertProductAction(
 }
 
 export async function deleteProductAction(formData: FormData) {
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") || "");
   if (!id) return;
-  deleteProduct(id);
+  await deleteProduct(id);
   revalidatePublicRoutes();
   redirect("/admin/productos");
 }

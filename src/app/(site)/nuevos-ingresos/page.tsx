@@ -13,9 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default async function NuevosIngresosPage() {
-  const settings = getSettings();
-  const hombre = listProducts({ gender: "hombre", isNew: true, available: true });
-  const mujer = listProducts({ gender: "mujer", isNew: true, available: true });
+  const [settings, hombre, mujer] = await Promise.all([
+    getSettings(),
+    listProducts({ gender: "hombre", isNew: true, available: true }),
+    listProducts({ gender: "mujer", isNew: true, available: true }),
+  ]);
 
   return (
     <div>
