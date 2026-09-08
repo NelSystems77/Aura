@@ -206,3 +206,58 @@ export async function incrementAllPrices(amount: number, gender?: Gender): Promi
 
   return refs.length;
 }
+
+/**
+ * Aplica (o quita) un descuento porcentual a una lista puntual de productos
+ * (selección manual desde el panel). `percent = null` quita la oferta y
+ * restaura currentPrice al precio regular. El porcentaje siempre se calcula
+ * sobre `regularPrice`, nunca sobre el precio ya rebajado.
+ */
+export async function bulkSetDiscount(ids: string[], percent: number | null): Promise<number> {
+  if (ids.length === 0) return 0;
+  const db = getAdminDb();
+  const refs = ids.map((id) => db.collection(COLLECTION).doc(id));
+  const now = new Date().toISOString();
+
+  const BATCH_SIZE = 300;
+  let updated = 0;
+  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+    const chunk = refs.slice(i, i + BATCH_SIZE);
+    const snaps = await db.getAll(...chunk);
+    const batch = db.batch();
+    for (const snap of snaps) {
+      if (!snap.exists) continue;
+      const regularPrice = Number(snap.get("regularPrice")) || 0;
+      const currentPrice =
+        percent === null ? regularPrice : Math.round(regularPrice * (1 - percent / 100));
+      batch.update(snap.ref, {
+        currentPrice,
+        onOffer: percent !== null,
+        updatedAt: now,
+      });
+      updated++;
+    }
+    await batch.commit();
+  }
+  return updated;
+}
+
+/**
+ * Marca disponible/agotado una lista puntual de productos (selección manual).
+ */
+export async function bulkSetAvailability(ids: string[], available: boolean): Promise<number> {
+  if (ids.length === 0) return 0;
+  const db = getAdminDb();
+  const refs = ids.map((id) => db.collection(COLLECTION).doc(id));
+  const now = new Date().toISOString();
+
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const ref of refs.slice(i, i + BATCH_SIZE)) {
+      batch.update(ref, { available, updatedAt: now });
+    }
+    await batch.commit();
+  }
+  return refs.length;
+}

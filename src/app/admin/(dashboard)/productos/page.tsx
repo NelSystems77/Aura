@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { listProducts, listBrands } from "@/lib/repo/products";
 import type { Gender } from "@/lib/types";
-import { formatColones } from "@/lib/format";
-import { ToggleButton } from "./ToggleButton";
-import { DeleteButton } from "./DeleteButton";
 import { BulkPriceForm } from "./BulkPriceForm";
+import { ProductsTable } from "./ProductsTable";
 
 const PAGE_SIZE = 30;
 
@@ -104,78 +102,11 @@ export default async function AdminProductsPage({
 
       <p className="mb-3 text-xs text-white/30">{brands.length} marcas en catálogo</p>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="bg-[#111318] text-xs uppercase tracking-wide text-white/40">
-            <tr>
-              <th className="px-4 py-3">Producto</th>
-              <th className="px-4 py-3">Género</th>
-              <th className="px-4 py-3">Precio</th>
-              <th className="px-4 py-3">Oferta</th>
-              <th className="px-4 py-3">Disponible</th>
-              <th className="px-4 py-3">Nuevo</th>
-              <th className="px-4 py-3">Destacado</th>
-              <th className="px-4 py-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {pageItems.map((p) => (
-              <tr key={p.id} className="hover:bg-white/[0.03]">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-white">{p.name}</p>
-                  <p className="text-xs text-white/40">{p.brand}</p>
-                </td>
-                <td className="px-4 py-3 text-xs uppercase text-white/60">
-                  {p.gender === "hombre" ? "Caballero" : "Dama"}
-                </td>
-                <td className="px-4 py-3 text-xs text-white/70">
-                  {formatColones(p.currentPrice)}
-                  {p.onOffer && (
-                    <span className="ml-1 text-white/30 line-through">
-                      {formatColones(p.regularPrice)}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <ToggleButton id={p.id} field="onOffer" active={p.onOffer} labelOn="Sí" labelOff="No" />
-                </td>
-                <td className="px-4 py-3">
-                  <ToggleButton
-                    id={p.id}
-                    field="available"
-                    active={p.available}
-                    labelOn="Sí"
-                    labelOff="Agotado"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <ToggleButton id={p.id} field="isNew" active={p.isNew} labelOn="Sí" labelOff="No" />
-                </td>
-                <td className="px-4 py-3">
-                  <ToggleButton
-                    id={p.id}
-                    field="featured"
-                    active={p.featured}
-                    labelOn="Sí"
-                    labelOff="No"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <Link
-                      href={`/admin/productos/${p.id}`}
-                      className="rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white/70 hover:border-[#c9a24b] hover:text-[#c9a24b]"
-                    >
-                      Editar
-                    </Link>
-                    <DeleteButton id={p.id} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductsTable
+        products={pageItems}
+        allFilteredIds={all.map((p) => p.id)}
+        allFilteredCount={total}
+      />
 
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-2 text-xs">

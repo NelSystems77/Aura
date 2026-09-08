@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  bulkSetAvailability,
+  bulkSetDiscount,
   deleteProduct,
   getProductById,
   getProductBySlug,
@@ -141,5 +143,49 @@ export async function bulkAdjustPricesAction(
   return {
     error: null,
     success: `Listo: ${sign}₡${amount.toLocaleString("es-CR")} aplicado a ${count} productos (${scope}).`,
+  };
+}
+
+export type BulkSelectionResult = { error: string | null; success?: string };
+
+const VALID_DISCOUNTS = [10, 15, 20, 30, 40, 50] as const;
+
+export async function bulkDiscountSelectedAction(
+  ids: string[],
+  percent: number | null
+): Promise<BulkSelectionResult> {
+  if (ids.length === 0) {
+    return { error: "No seleccionaste ningún producto." };
+  }
+  if (percent !== null && !VALID_DISCOUNTS.includes(percent as (typeof VALID_DISCOUNTS)[number])) {
+    return { error: "Porcentaje de descuento no válido." };
+  }
+
+  const count = await bulkSetDiscount(ids, percent);
+  revalidatePublicRoutes();
+
+  return {
+    error: null,
+    success:
+      percent === null
+        ? `Oferta quitada en ${count} producto(s).`
+        : `Descuento del ${percent}% aplicado a ${count} producto(s).`,
+  };
+}
+
+export async function bulkAvailabilitySelectedAction(
+  ids: string[],
+  available: boolean
+): Promise<BulkSelectionResult> {
+  if (ids.length === 0) {
+    return { error: "No seleccionaste ningún producto." };
+  }
+
+  const count = await bulkSetAvailability(ids, available);
+  revalidatePublicRoutes();
+
+  return {
+    error: null,
+    success: `${count} producto(s) marcado(s) como ${available ? "disponible" : "agotado"}.`,
   };
 }
