@@ -6,6 +6,7 @@ import {
   deleteProduct,
   getProductById,
   getProductBySlug,
+  incrementAllPrices,
   insertProduct,
   updateProduct,
 } from "@/lib/repo/products";
@@ -116,4 +117,29 @@ export async function deleteProductAction(formData: FormData) {
   await deleteProduct(id);
   revalidatePublicRoutes();
   redirect("/admin/productos");
+}
+
+export type BulkPriceState = { error: string | null; success?: string };
+
+export async function bulkAdjustPricesAction(
+  _prev: BulkPriceState,
+  formData: FormData
+): Promise<BulkPriceState> {
+  const amount = Number(formData.get("amount"));
+  const genderRaw = String(formData.get("gender") || "");
+  const gender = genderRaw === "hombre" || genderRaw === "mujer" ? (genderRaw as Gender) : undefined;
+
+  if (!amount || Number.isNaN(amount)) {
+    return { error: "Ingresa un monto distinto de cero (puede ser negativo para bajar precios)." };
+  }
+
+  const count = await incrementAllPrices(amount, gender);
+  revalidatePublicRoutes();
+
+  const sign = amount > 0 ? "+" : "";
+  const scope = gender ? (gender === "hombre" ? "Caballero" : "Dama") : "todo el catálogo";
+  return {
+    error: null,
+    success: `Listo: ${sign}₡${amount.toLocaleString("es-CR")} aplicado a ${count} productos (${scope}).`,
+  };
 }

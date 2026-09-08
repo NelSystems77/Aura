@@ -1,4 +1,5 @@
 import "server-only";
+import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { Gender, Product, ProductInput } from "@/lib/types";
 
@@ -173,4 +174,35 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   const db = getAdminDb();
   await db.collection(COLLECTION).doc(id).delete();
+}
+
+/**
+ * Suma `amount` (puede ser negativo) al precio regular y al precio actual de
+ * TODOS los productos, de golpe. Usa FieldValue.increment para que sea una
+ * operación atómica por documento (no requiere leer el precio actual antes).
+ * Devuelve la cantidad de productos afectados.
+ */
+export async function incrementAllPrices(amount: number, gender?: Gender): Promise<number> {
+  const db = getAdminDb();
+  const base = gender
+    ? db.collection(COLLECTION).where("gender", "==", gender)
+    : db.collection(COLLECTION);
+  const snapshot = await base.select().get();
+  const now = new Date().toISOString();
+
+  const BATCH_SIZE = 400;
+  const refs = snapshot.docs.map((d) => d.ref);
+  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const ref of refs.slice(i, i + BATCH_SIZE)) {
+      batch.update(ref, {
+        regularPrice: FieldValue.increment(amount),
+        currentPrice: FieldValue.increment(amount),
+        updatedAt: now,
+      });
+    }
+    await batch.commit();
+  }
+
+  return refs.length;
 }

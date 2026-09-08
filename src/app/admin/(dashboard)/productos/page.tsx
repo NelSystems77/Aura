@@ -4,6 +4,7 @@ import type { Gender } from "@/lib/types";
 import { formatColones } from "@/lib/format";
 import { ToggleButton } from "./ToggleButton";
 import { DeleteButton } from "./DeleteButton";
+import { BulkPriceForm } from "./BulkPriceForm";
 
 const PAGE_SIZE = 30;
 
@@ -57,6 +58,8 @@ export default async function AdminProductsPage({
           + Nuevo producto
         </Link>
       </div>
+
+      <BulkPriceForm />
 
       <form className="mb-6 flex flex-wrap gap-3" method="get">
         <input
