@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { upsertProductAction, type ProductFormState } from "@/lib/actions/product-actions";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import type { Product } from "@/lib/types";
 
 const initialState: ProductFormState = { error: null };
@@ -68,12 +69,11 @@ export function ProductForm({ product }: { product?: Product }) {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelClass}>URL de imagen (opcional)</label>
-          <input
+          <ImageUploadField
             name="imageUrl"
-            defaultValue={product?.imageUrl ?? ""}
-            placeholder="https://…"
-            className={inputClass}
+            label="Imagen del producto (opcional)"
+            defaultValue={product?.imageUrl}
+            folder="products"
           />
         </div>
         <div className="sm:col-span-2">

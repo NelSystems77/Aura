@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Solo el servidor (Admin SDK, vía el panel de administración) puede subir
+// archivos — por eso write siempre es false aquí. Las imágenes de productos
+// y del carrusel son públicas por naturaleza (se muestran a cualquier
+// visitante de la tienda), así que su lectura queda abierta.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /carousel/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

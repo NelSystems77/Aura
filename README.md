@@ -97,12 +97,16 @@ Los cambios se reflejan de inmediato en el sitio público (sin necesidad de reco
    npx firebase use aura-e7a0e
    ```
 
-2. Reglas de Firestore (deniegan todo acceso directo desde el cliente; el sitio solo lee/escribe
-   vía el servidor con el Admin SDK):
+2. Reglas de Firestore y de Storage (deniegan todo acceso directo desde el cliente; el sitio
+   solo lee/escribe vía el servidor con el Admin SDK — las fotos de productos/carrusel subidas
+   desde `/admin` sí quedan con lectura pública, ya que se muestran en la tienda):
 
    ```bash
-   npx firebase deploy --only firestore:rules
+   npx firebase deploy --only firestore:rules,storage
    ```
+
+   Si el bucket de Storage por defecto de tu proyecto todavía no existe, actívalo primero en
+   Firebase Console → Storage → "Comenzar" (una sola vez).
 
 3. **App Hosting**: crea el backend una sola vez desde Firebase Console → App Hosting → "Get
    started", conectando este repositorio de GitHub y la rama de producción. A partir de ahí,

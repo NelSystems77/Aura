@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { upsertSlideAction, type SlideFormState } from "@/lib/actions/carousel-actions";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import type { CarouselSlide } from "@/lib/types";
 
 const initialState: SlideFormState = { error: null };
@@ -24,10 +25,12 @@ export function SlideForm({ slide }: { slide?: CarouselSlide }) {
         <label className={labelClass}>Subtítulo</label>
         <input name="subtitle" defaultValue={slide?.subtitle} className={inputClass} />
       </div>
-      <div>
-        <label className={labelClass}>URL de imagen de fondo (opcional)</label>
-        <input name="imageUrl" defaultValue={slide?.imageUrl ?? ""} placeholder="https://…" className={inputClass} />
-      </div>
+      <ImageUploadField
+        name="imageUrl"
+        label="Imagen de fondo (opcional)"
+        defaultValue={slide?.imageUrl}
+        folder="carousel"
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>Enlace al hacer clic</label>

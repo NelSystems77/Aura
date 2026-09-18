@@ -2,6 +2,7 @@ import "server-only";
 import { getApps, initializeApp, cert, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { getStorage, type Storage } from "firebase-admin/storage";
 
 function createAdminApp(): App {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -10,6 +11,7 @@ function createAdminApp(): App {
       "NEXT_PUBLIC_FIREBASE_PROJECT_ID no está configurado (ver .env.example)."
     );
   }
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
   // Producción en Firebase App Hosting: las credenciales se resuelven solas
   // (Application Default Credentials), no hace falta ninguna clave.
@@ -20,11 +22,12 @@ function createAdminApp(): App {
   if (serviceAccountJson) {
     return initializeApp({
       projectId,
+      storageBucket,
       credential: cert(JSON.parse(serviceAccountJson)),
     });
   }
 
-  return initializeApp({ projectId });
+  return initializeApp({ projectId, storageBucket });
 }
 
 function getAdminApp(): App {
@@ -38,4 +41,8 @@ export function getAdminDb(): Firestore {
 
 export function getAdminAuth(): Auth {
   return getAuth(getAdminApp());
+}
+
+export function getAdminStorage(): Storage {
+  return getStorage(getAdminApp());
 }
