@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/types";
+import { formatPhoneDisplay } from "@/lib/format";
+import { buildWhatsAppLink, buildGeneralWhatsAppMessage } from "@/lib/whatsapp";
 
 export function SiteFooter({ settings }: { settings: SiteSettings }) {
   return (
@@ -44,10 +46,28 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-[#c9a24b]">
             Contacto
           </p>
-          <p className="text-sm text-white/60">
-            Pedidos y consultas directas por WhatsApp
-            <br />+{settings.whatsappNumber}
-          </p>
+          <p className="text-sm text-white/60">Pedidos y consultas directas por WhatsApp</p>
+          <a
+            href={buildWhatsAppLink(settings.whatsappNumber, buildGeneralWhatsAppMessage())}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-block text-sm font-semibold text-white hover:text-[#c9a24b]"
+          >
+            {formatPhoneDisplay(settings.whatsappNumber)}
+          </a>
+          {settings.whatsappNumberSecondary && (
+            <>
+              <p className="mt-3 text-sm text-white/60">También puedes escribirnos al</p>
+              <a
+                href={buildWhatsAppLink(settings.whatsappNumberSecondary, buildGeneralWhatsAppMessage())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-sm font-semibold text-white hover:text-[#c9a24b]"
+              >
+                {formatPhoneDisplay(settings.whatsappNumberSecondary)}
+              </a>
+            </>
+          )}
           <div className="mt-3 flex gap-3 text-sm">
             {settings.instagramUrl && (
               <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-white">

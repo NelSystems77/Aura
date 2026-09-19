@@ -37,7 +37,8 @@ async function seedSettings() {
     return;
   }
   await ref.set({
-    whatsappNumber: process.env.WHATSAPP_NUMBER || "50687409343",
+    whatsappNumber: process.env.WHATSAPP_NUMBER || "50671565232",
+    whatsappNumberSecondary: process.env.WHATSAPP_NUMBER_SECONDARY || "50687409343",
     siteName: "AURA Perfumería",
     siteTagline: "Fragancias de lujo, entrega inmediata",
     heroTitleHombre: "El poder de tu presencia",

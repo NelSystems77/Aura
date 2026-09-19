@@ -68,6 +68,7 @@ export type CarouselSlideInput = {
 
 export type SiteSettings = {
   whatsappNumber: string;
+  whatsappNumberSecondary: string;
   siteName: string;
   siteTagline: string;
   heroTitleHombre: string;
@@ -80,7 +81,8 @@ export type SiteSettings = {
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
-  whatsappNumber: "50687409343",
+  whatsappNumber: "50671565232",
+  whatsappNumberSecondary: "50687409343",
   siteName: "AURA Perfumería",
   siteTagline: "Fragancias de lujo, entrega inmediata",
   heroTitleHombre: "El poder de tu presencia",

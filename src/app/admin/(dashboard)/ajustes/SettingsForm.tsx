@@ -20,8 +20,21 @@ export function SettingsForm({ settings }: { settings: SiteSettings }) {
           <input name="siteName" defaultValue={settings.siteName} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>Número de WhatsApp (código país + número)</label>
+          <label className={labelClass}>Número de WhatsApp principal (código país + número)</label>
           <input name="whatsappNumber" defaultValue={settings.whatsappNumber} className={inputClass} />
+          <p className="mt-1 text-[11px] text-white/30">
+            Usado en el botón flotante, "Comprar por WhatsApp" y todos los enlaces de venta.
+          </p>
+        </div>
+        <div>
+          <label className={labelClass}>
+            Número de WhatsApp secundario (opcional, solo se muestra en el pie de página)
+          </label>
+          <input
+            name="whatsappNumberSecondary"
+            defaultValue={settings.whatsappNumberSecondary}
+            className={inputClass}
+          />
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass}>Eslogan</label>

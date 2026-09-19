@@ -42,13 +42,26 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     url: siteUrl,
     description: settings.seoDescription,
     sameAs: [settings.instagramUrl, settings.facebookUrl].filter(Boolean),
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "sales",
-      telephone: `+${settings.whatsappNumber}`,
-      areaServed: "CR",
-      availableLanguage: "Spanish",
-    },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "sales",
+        telephone: `+${settings.whatsappNumber}`,
+        areaServed: "CR",
+        availableLanguage: "Spanish",
+      },
+      ...(settings.whatsappNumberSecondary
+        ? [
+            {
+              "@type": "ContactPoint",
+              contactType: "customer service",
+              telephone: `+${settings.whatsappNumberSecondary}`,
+              areaServed: "CR",
+              availableLanguage: "Spanish",
+            },
+          ]
+        : []),
+    ],
   };
 
   return (

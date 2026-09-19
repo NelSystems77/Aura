@@ -14,6 +14,7 @@ export async function updateSettingsAction(
     "siteName",
     "siteTagline",
     "whatsappNumber",
+    "whatsappNumberSecondary",
     "heroTitleHombre",
     "heroSubtitleHombre",
     "heroTitleMujer",
@@ -31,6 +32,9 @@ export async function updateSettingsAction(
 
   if (!partial.whatsappNumber || partial.whatsappNumber.replace(/\D/g, "").length < 8) {
     return { error: "Ingresa un número de WhatsApp válido (con código de país, sin +)." };
+  }
+  if (partial.whatsappNumberSecondary && partial.whatsappNumberSecondary.replace(/\D/g, "").length < 8) {
+    return { error: "El número de WhatsApp secundario no es válido." };
   }
 
   await updateSettings(partial);
