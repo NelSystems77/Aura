@@ -22,3 +22,7 @@ export function buildProductWhatsAppMessage(product: Product, siteUrl?: string):
 export function buildGeneralWhatsAppMessage(): string {
   return "Hola! Vengo del sitio de AURA Perfumería y quisiera más información sobre sus fragancias.";
 }
+
+export function buildReviewWhatsAppMessage(): string {
+  return "Hola! Quiero compartir mi experiencia con AURA Perfumería:\n\n";
+}

@@ -1,10 +1,12 @@
 import { getSettings } from "@/lib/repo/settings";
 import { listSlides } from "@/lib/repo/carousel";
 import { listProducts } from "@/lib/repo/products";
+import { listReviews } from "@/lib/repo/reviews";
 import { HomeCarousel } from "@/components/HomeCarousel";
 import { ZoneSelector } from "@/components/ZoneSelector";
 import { ProductGrid } from "@/components/ProductGrid";
 import { SectionHeading } from "@/components/SectionHeading";
+import { ReviewsList } from "@/components/ReviewsList";
 import { Container } from "@/components/ui/Container";
 
 export const dynamic = "force-dynamic";
@@ -36,14 +38,16 @@ export default async function HomePage() {
   const settings = await getSettings();
   const slides = await listSlides(true);
 
-  const [onOfferAll, featuredAll, isNewAll] = await Promise.all([
+  const [onOfferAll, featuredAll, isNewAll, approvedReviews] = await Promise.all([
     listProducts({ available: true, onOffer: true }),
     listProducts({ available: true, featured: true }),
     listProducts({ available: true, isNew: true }),
+    listReviews({ approved: true }),
   ]);
   const onOffer = onOfferAll.slice(0, 10);
   const featured = featuredAll.slice(0, 10);
   const isNew = isNewAll.slice(0, 10);
+  const reviews = approvedReviews.slice(0, 6);
 
   const heroSlides =
     slides.length > 0
@@ -109,6 +113,20 @@ export default async function HomePage() {
           <Container>
             <SectionHeading eyebrow="Recién llegados" title="Nuevos ingresos" href="/nuevos-ingresos" />
             <ProductGrid products={isNew} whatsappNumber={settings.whatsappNumber} />
+          </Container>
+        </div>
+      )}
+
+      {reviews.length > 0 && (
+        <div className="border-t zone-border py-16 sm:py-20">
+          <Container>
+            <SectionHeading
+              eyebrow="Clientes AURA"
+              title="Lo que dicen nuestros clientes"
+              href="/resenas"
+              hrefLabel="Dejar mi reseña"
+            />
+            <ReviewsList reviews={reviews} />
           </Container>
         </div>
       )}

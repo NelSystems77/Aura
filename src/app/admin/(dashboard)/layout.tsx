@@ -2,11 +2,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentAdmin } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions/auth-actions";
+import { countPendingReviews } from "@/lib/repo/reviews";
 
 const NAV = [
   { href: "/admin", label: "Panel", icon: "📊" },
   { href: "/admin/productos", label: "Productos", icon: "🧴" },
   { href: "/admin/carrusel", label: "Carrusel", icon: "🎞️" },
+  { href: "/admin/resenas", label: "Reseñas", icon: "⭐" },
   { href: "/admin/ajustes", label: "Ajustes", icon: "⚙️" },
 ];
 
@@ -15,6 +17,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!admin) {
     redirect("/admin/login");
   }
+
+  const pendingReviews = await countPendingReviews();
 
   return (
     <div className="flex min-h-screen bg-[#0b0d10] text-[#f2efe9]">
@@ -31,6 +35,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             >
               <span>{item.icon}</span>
               {item.label}
+              {item.href === "/admin/resenas" && pendingReviews > 0 && (
+                <span className="ml-auto rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                  {pendingReviews}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

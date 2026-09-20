@@ -1,5 +1,6 @@
 import { countProducts } from "@/lib/repo/products";
 import { listSlides } from "@/lib/repo/carousel";
+import { countPendingReviews, listReviews } from "@/lib/repo/reviews";
 
 function StatCard({ label, value, accent = "#c9a24b" }: { label: string; value: number | string; accent?: string }) {
   return (
@@ -13,7 +14,12 @@ function StatCard({ label, value, accent = "#c9a24b" }: { label: string; value: 
 }
 
 export default async function AdminDashboardPage() {
-  const [stats, slides] = await Promise.all([countProducts(), listSlides()]);
+  const [stats, slides, totalReviews, pendingReviews] = await Promise.all([
+    countProducts(),
+    listSlides(),
+    listReviews(),
+    countPendingReviews(),
+  ]);
 
   return (
     <div>
@@ -30,6 +36,8 @@ export default async function AdminDashboardPage() {
         <StatCard label="Nuevos ingresos" value={stats.isNew} accent="#34d399" />
         <StatCard label="Destacados" value={stats.featured} />
         <StatCard label="Slides de carrusel" value={slides.length} />
+        <StatCard label="Reseñas totales" value={totalReviews.length} />
+        <StatCard label="Reseñas pendientes" value={pendingReviews} accent="#fbbf24" />
       </div>
 
       <p className="mt-8 text-sm text-white/40">

@@ -39,6 +39,11 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
                 Nuevos ingresos
               </Link>
             </li>
+            <li>
+              <Link href="/resenas" className="hover:text-white">
+                Reseñas de clientes
+              </Link>
+            </li>
           </ul>
         </div>
 

@@ -66,6 +66,21 @@ export type CarouselSlideInput = {
   active: boolean;
 };
 
+export type Review = {
+  id: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  approved: boolean;
+  createdAt: string;
+};
+
+export type ReviewInput = {
+  customerName: string;
+  rating: number;
+  comment: string;
+};
+
 export type SiteSettings = {
   whatsappNumber: string;
   whatsappNumberSecondary: string;

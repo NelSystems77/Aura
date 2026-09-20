@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/dama", label: "Dama" },
   { href: "/ofertas", label: "Ofertas" },
   { href: "/nuevos-ingresos", label: "Nuevos Ingresos" },
+  { href: "/resenas", label: "Reseñas" },
 ];
 
 export function SiteHeader() {
