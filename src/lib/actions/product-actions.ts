@@ -23,6 +23,13 @@ function slugify(input: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+function safeReturnTo(formData: FormData): string {
+  const returnTo = String(formData.get("returnTo") || "");
+  // Solo permitimos volver dentro del propio listado de productos, nunca a
+  // una URL arbitraria (evita open-redirect vía el campo del formulario).
+  return returnTo.startsWith("/admin/productos") ? returnTo : "/admin/productos";
+}
+
 function revalidatePublicRoutes() {
   revalidatePath("/");
   revalidatePath("/caballero");
@@ -96,6 +103,8 @@ export async function upsertProductAction(
     imageUrl: imageUrl || null,
   };
 
+  const returnTo = safeReturnTo(formData);
+
   if (id) {
     await updateProduct(id, input);
   } else {
@@ -110,15 +119,16 @@ export async function upsertProductAction(
   }
 
   revalidatePublicRoutes();
-  redirect("/admin/productos");
+  redirect(id ? returnTo : "/admin/productos");
 }
 
 export async function deleteProductAction(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) return;
+  const returnTo = safeReturnTo(formData);
   await deleteProduct(id);
   revalidatePublicRoutes();
-  redirect("/admin/productos");
+  redirect(returnTo);
 }
 
 export type BulkPriceState = { error: string | null; success?: string };

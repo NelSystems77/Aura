@@ -43,6 +43,10 @@ export default async function AdminProductsPage({
     return `/admin/productos?${params.toString()}`;
   }
 
+  // Con qué filtros/página volver después de editar o eliminar un producto,
+  // en vez de siempre reiniciar a la lista sin filtros.
+  const returnTo = buildQuery({});
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -106,6 +110,7 @@ export default async function AdminProductsPage({
         products={pageItems}
         allFilteredIds={all.map((p) => p.id)}
         allFilteredCount={total}
+        returnTo={returnTo}
       />
 
       {totalPages > 1 && (

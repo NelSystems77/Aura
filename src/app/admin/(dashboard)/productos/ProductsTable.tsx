@@ -17,10 +17,12 @@ export function ProductsTable({
   products,
   allFilteredIds,
   allFilteredCount,
+  returnTo,
 }: {
   products: Product[];
   allFilteredIds: string[];
   allFilteredCount: number;
+  returnTo: string;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
@@ -233,12 +235,12 @@ export function ProductsTable({
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Link
-                      href={`/admin/productos/${p.id}`}
+                      href={`/admin/productos/${p.id}?returnTo=${encodeURIComponent(returnTo)}`}
                       className="rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white/70 hover:border-[#c9a24b] hover:text-[#c9a24b]"
                     >
                       Editar
                     </Link>
-                    <DeleteButton id={p.id} />
+                    <DeleteButton id={p.id} returnTo={returnTo} />
                   </div>
                 </td>
               </tr>

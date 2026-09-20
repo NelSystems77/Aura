@@ -11,12 +11,13 @@ const inputClass =
   "w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-[#c9a24b]";
 const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50";
 
-export function ProductForm({ product }: { product?: Product }) {
+export function ProductForm({ product, returnTo }: { product?: Product; returnTo?: string }) {
   const [state, formAction, pending] = useActionState(upsertProductAction, initialState);
 
   return (
     <form action={formAction} className="max-w-2xl space-y-5">
       {product && <input type="hidden" name="id" value={product.id} />}
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
